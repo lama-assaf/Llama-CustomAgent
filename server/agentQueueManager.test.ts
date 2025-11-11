@@ -15,26 +15,26 @@ describe('AgentQueueManager', () => {
   });
 
   test('should allow spawning up to max concurrent agents', async () => {
-    const agent1 = manager.enqueueAgent('agent-1', { type: 'researcher', prompt: 'test1' });
-    const agent2 = manager.enqueueAgent('agent-2', { type: 'coder', prompt: 'test2' });
+    manager.enqueueAgent('agent-1', { type: 'researcher', prompt: 'test1' });
+    manager.enqueueAgent('agent-2', { type: 'coder', prompt: 'test2' });
 
     expect(manager.getRunningCount()).toBe(2);
     expect(manager.getQueuedCount()).toBe(0);
   });
 
   test('should queue agents beyond max concurrency', async () => {
-    const agent1 = manager.enqueueAgent('agent-1', { type: 'researcher', prompt: 'test1' });
-    const agent2 = manager.enqueueAgent('agent-2', { type: 'coder', prompt: 'test2' });
-    const agent3 = manager.enqueueAgent('agent-3', { type: 'debugger', prompt: 'test3' });
+    manager.enqueueAgent('agent-1', { type: 'researcher', prompt: 'test1' });
+    manager.enqueueAgent('agent-2', { type: 'coder', prompt: 'test2' });
+    manager.enqueueAgent('agent-3', { type: 'debugger', prompt: 'test3' });
 
     expect(manager.getRunningCount()).toBe(2);
     expect(manager.getQueuedCount()).toBe(1);
   });
 
   test('should auto-spawn queued agents when slot opens', async () => {
-    const agent1 = manager.enqueueAgent('agent-1', { type: 'researcher', prompt: 'test1' });
-    const agent2 = manager.enqueueAgent('agent-2', { type: 'coder', prompt: 'test2' });
-    const agent3 = manager.enqueueAgent('agent-3', { type: 'debugger', prompt: 'test3' });
+    manager.enqueueAgent('agent-1', { type: 'researcher', prompt: 'test1' });
+    manager.enqueueAgent('agent-2', { type: 'coder', prompt: 'test2' });
+    manager.enqueueAgent('agent-3', { type: 'debugger', prompt: 'test3' });
 
     // Complete agent1
     manager.markAgentComplete('agent-1');

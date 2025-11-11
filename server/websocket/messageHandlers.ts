@@ -6,6 +6,7 @@
 import type { ServerWebSocket } from "bun";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import type { HookInput, SDKCompactBoundaryMessage } from "@anthropic-ai/claude-agent-sdk";
+import { AgentQueueManager } from '../agentQueueManager';
 import { sessionDb } from "../database";
 import { getSystemPrompt, injectWorkingDirIntoAgents } from "../systemPrompt";
 import { AVAILABLE_MODELS } from "../../client/config/models";
@@ -48,6 +49,9 @@ AVAILABLE_MODELS.forEach(model => {
     provider: model.provider,
   };
 });
+
+// Agent queue manager for limiting concurrent agent execution
+const agentQueueManager = new AgentQueueManager(2); // Max 2 concurrent agents
 
 export async function handleWebSocketMessage(
   ws: ServerWebSocket<ChatWebSocketData>,
@@ -415,6 +419,44 @@ Run bash commands with the understanding that this is your current working direc
 
           const { tool_name, tool_input } = input as PreToolUseInput;
 
+          // ===== AGENT QUEUE MANAGEMENT =====
+          if (tool_name === 'Task') {
+            const taskInput = tool_input as { subagent_type?: string; prompt?: string; description?: string };
+            const subagentType = taskInput.subagent_type;
+
+            if (subagentType) {
+              const status = agentQueueManager.enqueueAgent(toolUseID || `task-${Date.now()}`, {
+                type: subagentType,
+                prompt: taskInput.prompt || '',
+              });
+
+              // Send queue status to client
+              sessionStreamManager.safeSend(
+                sessionId as string,
+                JSON.stringify({
+                  type: 'agent_queue_status',
+                  toolId: toolUseID,
+                  status: status,
+                  queueInfo: agentQueueManager.getStatus(),
+                })
+              );
+
+              // If queued, DENY the tool to prevent spawning
+              if (status === 'queued') {
+                console.log(`⏸️ Task tool denied (queued): ${subagentType} - Queue: ${agentQueueManager.getQueuedCount()}`);
+                return {
+                  hookSpecificOutput: {
+                    hookEventName: 'PreToolUse',
+                    permissionDecision: 'deny',
+                    permissionDecisionReason: `Agent queued. ${agentQueueManager.getRunningCount()}/${agentQueueManager.getStatus().max} slots in use. Will auto-execute when slot opens.`,
+                  }
+                };
+              }
+
+              console.log(`▶️ Task tool allowed: ${subagentType} - Running: ${agentQueueManager.getRunningCount()}/${agentQueueManager.getStatus().max}`);
+            }
+          }
+
           if (tool_name !== 'Bash') return {};
 
           const bashInput = tool_input as Record<string, unknown>;
@@ -604,6 +646,37 @@ Run bash commands with the understanding that this is your current working direc
           return {};
         }],
       }],
+      PostToolUse: [{
+        hooks: [async (input: HookInput, toolUseID: string | undefined) => {
+          type PostToolUseInput = HookInput & { tool_name: string; tool_input: Record<string, unknown> };
+
+          if (input.hook_event_name !== 'PostToolUse') return {};
+
+          const { tool_name } = input as PostToolUseInput;
+
+          // Track Task tool completion
+          if (tool_name === 'Task' && toolUseID) {
+            if (agentQueueManager.isAgentRunning(toolUseID)) {
+              agentQueueManager.markAgentComplete(toolUseID);
+
+              // Send updated queue status to client
+              sessionStreamManager.safeSend(
+                sessionId as string,
+                JSON.stringify({
+                  type: 'agent_queue_status',
+                  toolId: toolUseID,
+                  status: 'completed',
+                  queueInfo: agentQueueManager.getStatus(),
+                })
+              );
+
+              console.log(`✅ Task completed: ${toolUseID} - Queue: ${agentQueueManager.getQueuedCount()} waiting`);
+            }
+          }
+
+          return {};
+        }]
+      }]
     };
 
     // Create timeout controller (10 minutes for all modes)
