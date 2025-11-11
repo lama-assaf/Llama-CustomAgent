@@ -1,6 +1,6 @@
 /**
  * Agent Llama - Modern chat interface for Claude Agent SDK
- * Copyright (C) 2025 KenKai
+ * Copyright (C) 2025 Safastak
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -88,6 +88,13 @@ export interface ToolUseBlock {
   };
   // For Task tools: nested tool calls from spawned agents
   nestedTools?: ToolUseBlock[];
+  // For agent queue management
+  queueStatus?: 'running' | 'queued' | 'completed';
+  queueInfo?: {
+    running: number;
+    queued: number;
+    max: number;
+  };
 }
 
 export interface TextBlock {

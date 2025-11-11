@@ -1,6 +1,6 @@
 /**
  * Agent Llama - Modern chat interface for Claude Agent SDK
- * Copyright (C) 2025 KenKai
+ * Copyright (C) 2025 Safastak
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -521,6 +521,33 @@ export function ChatContainer() {
           }
 
           return prev; // No update if not in a thinking block
+        });
+      } else if (message.type === 'agent_queue_status') {
+        const { toolId, status, queueInfo } = message as {
+          type: 'agent_queue_status';
+          toolId: string;
+          status: 'running' | 'queued' | 'completed';
+          queueInfo: { running: number; queued: number; max: number }
+        };
+
+        // Update UI state to show queue status
+        setMessages(prev => {
+          const lastMessage = prev[prev.length - 1];
+          if (!lastMessage || lastMessage.type !== 'assistant') return prev;
+
+          const content = Array.isArray(lastMessage.content) ? lastMessage.content : [];
+          const updatedContent = content.map(block => {
+            if (block.type === 'tool_use' && block.id === toolId) {
+              return {
+                ...block,
+                queueStatus: status,
+                queueInfo: queueInfo,
+              };
+            }
+            return block;
+          });
+
+          return [...prev.slice(0, -1), { ...lastMessage, content: updatedContent }];
         });
       } else if (message.type === 'tool_use' && 'toolId' in message && 'toolName' in message && 'toolInput' in message) {
         // Handle tool use messages
@@ -1189,15 +1216,15 @@ export function ChatContainer() {
                   <div className="flex items-center gap-3">
                     {!isSidebarOpen && (
                       <img
-                        src="/client/agent-boy.svg"
+                        src="/client/agent-lam.svg"
                         alt="Agent Llama"
                         className="header-icon"
                         loading="eager"
                         onError={(e) => {
-                          console.error('Failed to load agent-boy.svg');
+                          console.error('Failed to load agent-lam.svg');
                           // Retry loading
                           setTimeout(() => {
-                            e.currentTarget.src = '/client/agent-boy.svg?' + Date.now();
+                            e.currentTarget.src = '/client/agent-lam.svg?' + Date.now();
                           }, 100);
                         }}
                       />

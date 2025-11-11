@@ -1,6 +1,6 @@
 /**
  * Agent Llama - Modern chat interface for Claude Agent SDK
- * Copyright (C) 2025 KenKai
+ * Copyright (C) 2025 Safastak
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -633,6 +633,27 @@ function TaskToolComponent({ toolUse }: { toolUse: ToolUseBlock }) {
           </button>
         </div>
       </div>
+
+      {/* Queue Status Badge */}
+      {toolUse.queueStatus && (
+        <div className="flex items-center gap-2 px-4 py-2 text-xs bg-[#0C0E10] border-b border-white/10">
+          {toolUse.queueStatus === 'queued' && (
+            <span className="px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">
+              ⏸️ Queued ({toolUse.queueInfo?.queued || 0} waiting, {toolUse.queueInfo?.running || 0}/{toolUse.queueInfo?.max || 2} running)
+            </span>
+          )}
+          {toolUse.queueStatus === 'running' && (
+            <span className="px-2 py-1 rounded-full bg-green-500/10 text-green-500 border border-green-500/20">
+              ▶️ Running ({toolUse.queueInfo?.running || 0}/{toolUse.queueInfo?.max || 2})
+            </span>
+          )}
+          {toolUse.queueStatus === 'completed' && (
+            <span className="px-2 py-1 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
+              ✅ Completed
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Content */}
       {isExpanded && (
@@ -1784,7 +1805,7 @@ export function AssistantMessage({ message }: AssistantMessageProps) {
           {/* Header with avatar and model name */}
           <div className="message-assistant-header">
             <img
-              src="/client/agent-boy.svg"
+              src="/client/agent-lam.svg"
               className="message-assistant-avatar"
               alt="Agent Llama"
             />
