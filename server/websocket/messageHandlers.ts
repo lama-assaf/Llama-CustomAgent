@@ -11,7 +11,7 @@ import { sessionDb } from "../database";
 import { getSystemPrompt, injectWorkingDirIntoAgents } from "../systemPrompt";
 import { AVAILABLE_MODELS } from "../../client/config/models";
 import { configureProvider } from "../providers";
-import { getMcpServers, getAllowedMcpTools } from "../mcpServers";
+import { getMcpServers } from "../mcpServers";
 import { AGENT_REGISTRY } from "../agents";
 import { validateDirectory } from "../directoryUtils";
 import { saveImageToSessionPictures, saveFileToSessionFiles } from "../imageUtils";
@@ -239,7 +239,7 @@ async function handleChatMessage(
   const { apiModelId, provider } = modelConfig;
 
   // Configure provider (sets ANTHROPIC_BASE_URL and ANTHROPIC_API_KEY env vars)
-  const providerType = provider as 'anthropic' | 'z-ai';
+  const providerType = provider as 'anthropic' | 'z-ai' | 'moonshot';
 
   // Validate API key before proceeding (OAuth takes precedence over API key)
   try {
@@ -256,7 +256,6 @@ async function handleChatMessage(
 
   // Get MCP servers for this provider (model-specific filtering for GLM)
   const mcpServers = getMcpServers(providerType, apiModelId);
-  const allowedMcpTools = getAllowedMcpTools(providerType, apiModelId);
 
   // Minimal request logging - one line summary
   // Note: At this point we haven't checked history yet, so we use isNewStream for subprocess status
@@ -348,6 +347,7 @@ Run bash commands with the understanding that this is your current working direc
       includePartialMessages: true,
       agents: agentsWithWorkingDir, // Register custom agents with working dir context
       cwd: workingDir, // Set working directory for all tool executions
+      settingSources: ['project'], // Load Skills from .claude/skills/ and agents from .claude/agents/
       // Let SDK manage its own subprocess spawning - don't override executable
       // abortController will be added after stream creation
 
@@ -390,9 +390,9 @@ Run bash commands with the understanding that this is your current working direc
       },
     };
 
-    // Enable extended thinking only for Anthropic models
+    // Enable extended thinking for Anthropic and Moonshot models
     // Z.AI's Anthropic-compatible API doesn't support maxThinkingTokens parameter
-    if (providerType === 'anthropic') {
+    if (providerType === 'anthropic' || providerType === 'moonshot') {
       queryOptions.maxThinkingTokens = 10000;
       console.log('🧠 Extended thinking enabled with maxThinkingTokens:', queryOptions.maxThinkingTokens);
     } else {
@@ -402,10 +402,11 @@ Run bash commands with the understanding that this is your current working direc
     // SDK automatically uses its bundled CLI at @anthropic-ai/claude-agent-sdk/cli.js
     // No need to specify pathToClaudeCodeExecutable - the SDK handles this internally
 
-    // Add MCP servers and allowed tools if provider has them
+    // Add MCP servers if provider has them
+    // No need to set allowedTools - bypassPermissions gives access to all tools
+    // MCP tools will be available through mcpServers, built-in tools through bypassPermissions
     if (Object.keys(mcpServers).length > 0) {
       queryOptions.mcpServers = mcpServers;
-      queryOptions.allowedTools = allowedMcpTools;
     }
 
     // Add PreToolUse hook to intercept background Bash commands and long-running commands
@@ -779,8 +780,14 @@ Run bash commands with the understanding that this is your current working direc
         // If session is in plan mode, immediately switch after spawn
         // (SDK always spawns with bypassPermissions to allow bidirectional mode switching)
         if (session.permission_mode === 'plan') {
-          console.log('🔄 Switching to plan mode');
-          await result.setPermissionMode('plan');
+          try {
+            console.log('🔄 Switching to plan mode');
+            await result.setPermissionMode('plan');
+          } catch (error) {
+            console.error('❌ Failed to set permission mode to plan:', error);
+            // Continue with bypassPermissions as fallback
+            console.warn('⚠️  Continuing with bypassPermissions mode');
+          }
         }
 
         // Note: We don't fetch commands from SDK here because supportedCommands()
@@ -919,13 +926,22 @@ Run bash commands with the understanding that this is your current working direc
                 // Send context usage to client if available
                 if (resultMessage.modelUsage) {
                   // Get usage for the current model (not first alphabetically!)
-                  const usage = resultMessage.modelUsage[apiModelId] as {
+                  // For Moonshot: Falls back to first entry if exact model not found (Moonshot returns wrong model ID)
+                  // Note: Moonshot API currently returns inputTokens: 0 for all requests (API limitation)
+                  let usage = resultMessage.modelUsage[apiModelId] as {
                     inputTokens: number;
                     outputTokens: number;
                     contextWindow: number;
                     cacheReadInputTokens?: number;
                     cacheCreationInputTokens?: number;
                   };
+
+                  // Fallback: If model ID doesn't match, use first available model usage
+                  if (!usage && Object.keys(resultMessage.modelUsage).length > 0) {
+                    const firstModelId = Object.keys(resultMessage.modelUsage)[0];
+                    usage = resultMessage.modelUsage[firstModelId] as typeof usage;
+                  }
+
                   if (usage) {
                     // inputTokens already includes the full context size
                     // cacheReadInputTokens and cacheCreationInputTokens are subsets for billing breakdown
@@ -1241,6 +1257,10 @@ Run bash commands with the understanding that this is your current working direc
         _lastError = error;
         console.error(`❌ Query attempt ${attemptNumber}/${MAX_RETRIES} failed:`, error);
 
+        // Clean up failed session stream before retrying
+        sessionStreamManager.cleanupSession(sessionId as string, 'retry_cleanup');
+        activeQueries.delete(sessionId as string);
+
         // Parse error with stderr context for better error messages
         const parsedError = parseApiError(error, stderrOutput);
         console.log('📊 Parsed error:', {
@@ -1287,7 +1307,7 @@ Run bash commands with the understanding that this is your current working direc
           break;
         }
 
-        // Calculate retry delay
+        // Calculate retry delay with exponential backoff
         let delayMs = INITIAL_DELAY_MS * Math.pow(BACKOFF_MULTIPLIER, attemptNumber - 1);
 
         // Respect rate limit retry-after
@@ -1312,6 +1332,8 @@ Run bash commands with the understanding that this is your current working direc
         // Wait before retrying
         console.log(`⏳ Waiting ${delayMs}ms before retry ${attemptNumber + 1}...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
+
+        // Continue to next iteration of retry loop
       }
     }
 

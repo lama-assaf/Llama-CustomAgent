@@ -1,56 +1,63 @@
-# Claude Development Instructions
+# Agent Girl
 
-## CRITICAL: Post-Edit Workflow
+A desktop-first chat interface for Claude Agent SDK with real-time streaming, persistent sessions, and specialized sub-agents, running locally with full file system access.
 
-After EVERY file edit, update, or code change, you MUST:
+## Project Structure
 
-1. **Run TypeScript type checking:**
-   ```bash
-   bunx tsc --noEmit
-   ```
-
-2. **Run ESLint:**
-   ```bash
-   bunx eslint .
-   ```
-
-3. **Fix ALL warnings and errors** - Zero tolerance
-
-4. **Restart the dev server:**
-   ```bash
-   lsof -ti:3001 | xargs kill -9 2>/dev/null; bun run dev
-   ```
-   (Use Bash tool with `run_in_background: true`)
-
-### OAuth Authentication (Claude Pro/Max)
-```bash
-bun run login         # Log in with Claude subscription
-bun run logout        # Log out and clear OAuth tokens
-bun run auth:status   # Check authentication status
+```
+agent-boy2/
+├── server/               # Backend (Bun + WebSocket)
+│   ├── server.ts         # Main entry point (port 3001)
+│   ├── agents.ts         # Agent configuration
+│   ├── routes/           # API endpoints
+│   ├── commands/         # Slash commands per mode
+│   ├── modes/            # System prompts per mode
+│   ├── templates/        # CLAUDE.md templates per mode
+│   └── websocket/        # Real-time messaging
+├── client/               # Frontend (React 19 + TypeScript)
+│   ├── App.tsx           # Main React component
+│   ├── components/       # UI components
+│   │   ├── chat/         # Chat interface
+│   │   ├── message/      # Message rendering
+│   │   ├── sidebar/      # Navigation
+│   │   └── ui/           # Base components (Radix UI)
+│   ├── hooks/            # Custom React hooks
+│   └── utils/            # Client utilities
+├── data/                 # SQLite session database
+└── dist/                 # Build output
 ```
 
-**IMPORTANT**: When logged in with OAuth, your API key is **never used**. This ensures you use your Claude Pro/Max subscription instead of API credits, saving money!
+## Organization Rules
 
-See [OAUTH.md](./OAUTH.md) for full OAuth documentation.
+**Modularity principles:**
+- API routes → `/server/routes`, one file per resource
+- React components → `/client/components`, one component per file
+- Slash commands → `/server/commands/[mode]`, one command per .md file
+- Utilities → grouped by domain (server/utils, client/utils)
+- Tests → co-located with code being tested
 
-### Run Tests
+**Single responsibility:**
+- Keep files focused and under 300 lines
+- Extract shared logic to utilities
+- Mode-specific features stay in mode folders
+
+## Code Quality - Zero Tolerance
+
+After editing ANY file, run ALL checks:
+
 ```bash
-bun test              # Run all tests
-bun test --watch      # Run tests in watch mode
+bunx tsc --noEmit
+bunx eslint .
 ```
 
-### Port Management
-If port 3001 is already in use:
+Fix ALL errors/warnings before continuing.
+
+**Server restart (if needed):**
 ```bash
-lsof -ti:3001 | xargs kill -9
+lsof -ti:3001 | xargs kill -9 2>/dev/null; bun run dev
 ```
 
-### Database Reset
-To reset the SQLite database:
-```bash
-rm -rf data/
-mkdir data
-```
+Read server output and fix ALL warnings/errors.
 
 ## Architecture
 
@@ -371,3 +378,22 @@ CREATE INDEX idx_messages_session_id ON messages(session_id)
 7. **Custom agents**: Agent names must match exactly in `AGENT_REGISTRY` for Task tool spawning to work
 8. **Node.js requirement**: The Claude SDK subprocess requires Node.js v18+. Server runs on Bun, but SDK spawns Node processes. Auto-installed by launcher scripts if missing.
 Never skip these steps. Always complete them before ending your turn.
+=======
+## Code Quality - Zero Tolerance
+
+After editing ANY file, run ALL checks:
+
+```bash
+bunx tsc --noEmit
+bunx eslint .
+```
+
+Fix ALL errors/warnings before continuing.
+
+**Server restart (if needed):**
+```bash
+lsof -ti:3001 | xargs kill -9 2>/dev/null; bun run dev
+```
+
+Read server output and fix ALL warnings/errors.
+>>>>>>> upstream/master
