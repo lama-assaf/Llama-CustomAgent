@@ -2,40 +2,9 @@
 
 # Agent Llama
 
-**A modern chat interface powered by the Claude Agent SDK**
-
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://reactjs.org/)
-[![Bun](https://img.shields.io/badge/Bun-Latest-black?logo=bun)](https://bun.sh/)
-[![Claude](https://img.shields.io/badge/Claude-Sonnet_4.5-8B5CF6)](https://www.anthropic.com/claude)
-
-<img src="agentgirl.png" alt="Agent Llama" width="600" />
-
 
 Seamless AI conversations with real-time streaming, session management, and specialized sub-agents. Built with React, TypeScript, and Bun for blazing-fast performance.
 
-[Getting Started](#-quick-start) • [Features](#-features) • [Installation](#-installation) • [Contributing](#-contributing)
-
-</div>
-
----
-
-## 📋 Table of Contents
-
-- [🌟 Overview](#-overview)
-- [✨ Features](#-features)
-- [🚀 Installation](#-installation)
-- [📖 Quick Start](#-quick-start)
-- [🎮 Usage](#-usage)
-- [🛠️ Development](#️-development)
-- [📚 Architecture](#-architecture)
-- [🔧 Configuration](#-configuration)
-- [🐛 Troubleshooting](#-troubleshooting)
-- [🤝 Contributing](#-contributing)
-- [📄 License](#-license)
-
----
 
 ## 🌟 Overview
 
