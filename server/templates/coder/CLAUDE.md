@@ -28,7 +28,7 @@
 - ✅ Use Tailwind utilities for layout, spacing, sizing, responsive design
 - ✅ Use CSS variables from `globals.css` for colors, fonts, shadows, animations
 - ❌ NO inline `style={{ }}` for static properties
-- ⚠️ ONLY inline styles for dynamic values (e.g., `style={{ animationDelay: '${delay}ms' }}`)
+- ⚠️ ONLY inline styles for dynamic values (e.g., `style={% raw %}{{ animationDelay: '${delay}ms' }}{% endraw %}`)
 
 **Reference Files:**
 - Design tokens: `globals.css`, `tailwind.config.js`
