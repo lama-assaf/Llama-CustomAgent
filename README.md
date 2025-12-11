@@ -1,7 +1,4 @@
-<div align="center">
-
 # Agent Llama
-
 
 Seamless AI conversations with real-time streaming, session management, and specialized sub-agents. Built with React, TypeScript, and Bun for blazing-fast performance.
 
@@ -452,18 +449,6 @@ See the [LICENSE](LICENSE) file for full terms.
 - Anthropic team for the Claude Agent SDK
 - Open source community for amazing tools
 
----
-
-## 📞 Support
-
-- **GitHub Issues**: [Report bugs](https://github.com/Safastakii/agent-llama/issues)
-- **GitHub Discussions**: [Ask questions](https://github.com/Safastakii/agent-llama/discussions)
-- **YouTube**: [@Safastakdoesai](https://www.youtube.com/@Safastakdoesai)
-- **Skool Community**: [skool.com/Safastak](https://www.skool.com/Safastak)
-
----
-
-<div align="center">
 
 **Built with ❤️ using Claude Agent SDK**
 
@@ -471,4 +456,3 @@ Copyright © 2025 Safastak • Licensed under AGPL-3.0
 
 [⬆ Back to Top](#agent-llama)
 
-</div>
