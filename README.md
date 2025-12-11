@@ -438,7 +438,7 @@ See the [LICENSE](LICENSE) file for full terms.
 
 ## 🙏 Credits
 
-**Created by [Safastak](https://github.com/Safastakii)**
+**Created by [Lama Assaf](https://lamassaf.xyz)**
 
 **Built with:**
 - [Anthropic Claude Agent SDK](https://github.com/anthropics/anthropic-sdk-typescript) - AI capabilities
@@ -455,7 +455,7 @@ See the [LICENSE](LICENSE) file for full terms.
 
 **Built with ❤️ using Claude Agent SDK**
 
-Copyright © 2025 Safastak • Licensed under AGPL-3.0
+Copyright © 2025 Lama Assaf • Licensed under AGPL-3.0
 
 [⬆ Back to Top](#agent-llama)
 
